@@ -26,7 +26,7 @@ A chatbot assistant that provides tailored career guidance to students worldwide
 3. Install the dependencies:
 
 ```
-cd Career-Counseling-Assistant
+npm install
 ```
 
 ## Usage

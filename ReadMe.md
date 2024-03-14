@@ -38,3 +38,15 @@ npm start
 ```
 
 Open your browser and go to `localhost:3000` to test the chatbot.
+
+## Change the Knowledge Base Docs:
+
+```
+const file = await openai.files.create({
+      file: fs.createReadStream("Chatbot Data.docx"),
+      purpose: "assistants",
+    });
+
+```
+
+You can change your documents here `file: fs.createReadStream("Chatbot Data.docx")`,

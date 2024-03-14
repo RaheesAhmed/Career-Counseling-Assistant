@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer";
+const puppeteer = require("puppeteer");
 
 async function scrapeGoogleSearchResults(userInput) {
   const browser = await puppeteer.launch({ headless: true }); // Set headless: true for no GUI
@@ -13,7 +13,7 @@ async function scrapeGoogleSearchResults(userInput) {
       title: anchor.innerText,
       url: anchor.parentElement.href,
     }));
-    return links.slice(0, 5);
+    return links.slice(0, 10);
   });
 
   const resultsData = [];
@@ -42,4 +42,4 @@ async function scrapeGoogleSearchResults(userInput) {
   return resultsData;
 }
 
-export default scrapeGoogleSearchResults;
+module.exports = scrapeGoogleSearchResults;

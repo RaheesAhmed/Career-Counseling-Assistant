@@ -1,6 +1,6 @@
 # Career Counseling Assistant
 
-A chatbot assistant that provides tailored career guidance to students worldwide, using OpenAI's GPT-3.5-turbo model and a scraping function for up-to-date information.
+A chatbot assistant that provides tailored career guidance to students worldwide, using OpenAI's Assistants API and a scraping function for up-to-date information.
 
 ## Features
 
@@ -26,7 +26,7 @@ A chatbot assistant that provides tailored career guidance to students worldwide
 3. Install the dependencies:
 
 ```
-cd Career-Counseling-Assistant
+npm install
 ```
 
 ## Usage

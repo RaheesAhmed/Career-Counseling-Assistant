@@ -42,10 +42,7 @@ Open your browser and go to `localhost:3000` to test the chatbot.
 ## Change the Knowledge Base Docs:
 
 ```
-const file = await openai.files.create({
-      file: fs.createReadStream("Chatbot Data.docx"),
-      purpose: "assistants",
-    });
+add any file you want to add as knowledgebase
 
 ```
 

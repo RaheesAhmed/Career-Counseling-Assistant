@@ -222,6 +222,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     `;
+  let formFilled = false;
+  let currentQuestion = 0;
+  const questions = [
+    {
+      prompt:
+        "Hello! I'm Nexa, your career counselor. Shall we begin? (Yes/No)",
+    },
+    { prompt: "What's your name, age, and gender?" },
+    { prompt: "What's your age?" },
+    { prompt: "What's your gender?" },
+    {
+      prompt:
+        "Could you please tell me about your current educational level? (10th grade/school/O-levels or 12th grade/college)",
+    },
+    {
+      prompt: "Great! Now, could you share the subjects you've been studying?",
+    },
+    {
+      prompt:
+        "How would you describe your family's financial background? (Lower-Middle, Middle Class, or Upper-Middle)",
+    },
+    { prompt: "Share your 3 strengths and 3 areas you'd like to improve?" },
+    { prompt: "What do you want to be in 5 years from now?" },
+    {
+      prompt:
+        "Is there anything else you'd like to share that could help us provide you with personalized advice? (Optional)",
+    },
+  ];
+  const userData = {};
 
   document.head.appendChild(styleElement);
   const fontAwesomeLink = document.createElement("link");
@@ -409,36 +438,69 @@ document.addEventListener("DOMContentLoaded", function () {
       chatbotInput.value = "";
 
       // Show typing animation
-      appendTypingAnimation();
+      //appendTypingAnimation();
 
-      // Get the chat history from session storage and format it
-      const chatHistory = JSON.parse(sessionStorage.getItem("chatHistory"));
+      // Handle the conversation flow
+      if (!formFilled) {
+        handleInitialQuestions(query);
+      } else {
+        appendTypingAnimation();
+        // Send data to backend when all questions are answered
+        try {
+          const response = await fetch(ServerAdd, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(userData),
+          });
 
-      try {
-        // Send user query and formatted chat history to your backend
-        const response = await fetch(ServerAdd, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userInput: query }),
-        });
+          const data = await response.json();
+          const botResponse = data.response;
 
-        const data = await response.json();
-        const botResponse = data.response.replace(/(?:\r\n|\r|\n)/g, "<br>");
-
-        // Remove typing animation and append bot response to chat history
-        removeTypingAnimation();
-        appendMessage("bot", botResponse);
-        chatHistory.push({ sender: "bot", message: botResponse });
-        sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-      } catch (error) {
-        console.log(error);
-        const errorMessage =
-          "I'm sorry, I'm having trouble connecting to the server.";
-        removeTypingAnimation();
-        appendMessage("bot", errorMessage);
+          // Remove typing animation and append bot response to chat history
+          removeTypingAnimation();
+          appendMessage("bot", botResponse);
+        } catch (error) {
+          console.error(error);
+          removeTypingAnimation();
+          appendMessage(
+            "bot",
+            "I'm sorry, I'm having trouble connecting to the server."
+          );
+        }
       }
+    }
+  }
+
+  function handleInitialQuestions(userResponse) {
+    if (currentQuestion === 0) {
+      if (userResponse.toLowerCase() === "yes") {
+        currentQuestion++;
+        appendMessage("bot", questions[currentQuestion].prompt);
+      } else {
+        appendMessage("bot", "Please type 'Yes' to start the conversation.");
+      }
+    } else if (currentQuestion > 0 && currentQuestion < questions.length - 1) {
+      userData[`question${currentQuestion}`] = userResponse;
+      currentQuestion++;
+      appendMessage(
+        "bot",
+        questions[currentQuestion].prompt,
+        questions[currentQuestion].options
+      );
+    } else if (currentQuestion === questions.length - 1) {
+      userData[`question${currentQuestion}`] = userResponse;
+      formFilled = true;
+      removeTypingAnimation();
+      appendMessage(
+        "bot",
+        "Thank you for providing all the information. I'll now analyze your answers and provide personalized career advice."
+      );
+      appendMessage(
+        "bot",
+        "Now Tell Me How i Can assisst personalized career advice?"
+      );
     }
   }
 
@@ -466,7 +528,7 @@ document.addEventListener("DOMContentLoaded", function () {
     typingElements.forEach((element) => element.remove());
   }
 
-  function appendMessage(sender, message) {
+  function appendMessage(sender, message, options) {
     const chatbotContent = document.getElementById("chatbot-content");
 
     const messageElement = document.createElement("div");
@@ -485,10 +547,26 @@ document.addEventListener("DOMContentLoaded", function () {
     messageBubble.style.padding = "12px";
     messageBubble.style.borderRadius = "10px";
     messageBubble.style.maxWidth = "80%";
-    messageBubble.innerHTML = message;
+    messageBubble.innerHTML = message.replace(/\n/g, "<br>");
 
     messageElement.appendChild(iconElement);
     messageElement.appendChild(messageBubble);
+
+    if (options) {
+      const buttonsContainer = document.createElement("div");
+      buttonsContainer.classList.add("buttons-container");
+
+      options.forEach((option) => {
+        const button = document.createElement("button");
+        button.textContent = option.text;
+        button.classList.add("chatbot-option-button");
+        button.onclick = () => handleInitialQuestions(option.value);
+        buttonsContainer.appendChild(button);
+      });
+
+      messageElement.appendChild(buttonsContainer);
+    }
+
     chatbotContent.appendChild(messageElement);
     chatbotContent.scrollTop = chatbotContent.scrollHeight;
   }

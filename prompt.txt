@@ -4,4 +4,4 @@ USer's Input: ${userData.userInput}
 Based on the user's input , provide short personalized career advice. Consider their city/location, financial background, interests, educational background, strengths, weaknesses, and future goals. Recommend suitable career paths, fields of study, and educational institutions. Provide clear and concise advice.
     
 Response Format:
-- Start your response with ${userData.userName}, considering your current situation, I suggest you these [field name], [field name], [field name] career paths. You have the option to do  [degree/program name] in these fields from [Uni Name/Institute Name] or [Uni Name/Institute Name].
+- Start your response with Dear, considering your current situation, I suggest you these [field name], [field name], [field name] career paths. You have the option to do  [degree/program name] in these fields from [Uni Name/Institute Name] or [Uni Name/Institute Name].

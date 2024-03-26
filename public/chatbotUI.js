@@ -18,17 +18,37 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     #chatbot-toggle{
-        background-color: #163F77; 
+        
         border:none;
     }
     
     #toggleicon{
-        background-color: #163F77; /* White background color */
+        background-color: white !important; /* White background color */
         border-radius: 50%;
         padding: 5px;
         color:white;
         font-size:15px;
     }
+
+  
+    /* Chat options container */
+.chat-options {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Chat options buttons */
+.chat-options button {
+    background-color: #163F77;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
     
     /* Chatbot form container */
     #chatbot-form-container {
@@ -51,6 +71,13 @@ document.addEventListener("DOMContentLoaded", function () {
         gap: 0.1rem;
     }
     
+    .user-message {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center; /* Add this line to align items vertically center */
+      margin: 5px 0;
+  }
+  
     #chatbot-form label {
         margin: 10px 0px;
         font-weight: 700;
@@ -157,12 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
     
     }
     
-    /* User message */
-    .user-message {
-        display: flex;
-        justify-content: flex-end;
-        margin: 5px 0;
-    }
+   
     
     /* Bot message */
     .bot-message {
@@ -222,6 +244,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     `;
+  let formFilled = false;
+  let currentQuestion = 0;
+  const questions = [
+    {
+      prompt:
+        "Hello! I'm Nexa, your career counselor. Shall we begin? (Yes/No)",
+    },
+    { prompt: "What's your Name?" },
+    { prompt: "What's your age?" },
+    { prompt: "What's your gender?" },
+    {
+      prompt:
+        "Could you please tell me about your current educational level? (10th grade/school/O-levels or 12th grade/college)",
+    },
+    {
+      prompt: "Great! Now, could you share the subjects you've been studying?",
+    },
+    {
+      prompt:
+        "How would you describe your family's financial background? (Lower-Middle, Middle Class, or Upper-Middle)",
+    },
+    { prompt: "Share your 3 strengths and 3 areas you'd like to improve?" },
+    { prompt: "What do you want to be in 5 years from now?" },
+    {
+      prompt:
+        "Is there anything else you'd like to share that could help us provide you with personalized advice? (Optional)",
+    },
+  ];
+  const userData = {};
 
   document.head.appendChild(styleElement);
   const fontAwesomeLink = document.createElement("link");
@@ -298,7 +349,7 @@ document.addEventListener("DOMContentLoaded", function () {
         {
           sender: "bot",
           message:
-            "Welcome! I'm your career guide, here to assist you in making informed decisions about your future. How can I help you today?",
+            "Welcome! I'm Nexa ,your career guide, here to assist you in making informed decisions about your future.",
         },
       ])
     );
@@ -363,6 +414,9 @@ document.addEventListener("DOMContentLoaded", function () {
       chatbotformcontainer.style.display = "flex";
     } else {
       chatbotWindow.style.display = "block";
+      if (!isChatbotOpen) {
+        showChatOptions();
+      }
     }
     chatbotToggle.innerHTML =
       '<i id="toggleicon" class="fas fa-chevron-down"></i>';
@@ -408,37 +462,62 @@ document.addEventListener("DOMContentLoaded", function () {
       appendMessage("user", query);
       chatbotInput.value = "";
 
-      // Show typing animation
-      appendTypingAnimation();
-
-      // Get the chat history from session storage and format it
-      const chatHistory = JSON.parse(sessionStorage.getItem("chatHistory"));
-
-      try {
-        // Send user query and formatted chat history to your backend
-        const response = await fetch(ServerAdd, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userInput: query }),
-        });
-
-        const data = await response.json();
-        const botResponse = data.response.replace(/(?:\r\n|\r|\n)/g, "<br>");
-
-        // Remove typing animation and append bot response to chat history
-        removeTypingAnimation();
-        appendMessage("bot", botResponse);
-        chatHistory.push({ sender: "bot", message: botResponse });
-        sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-      } catch (error) {
-        console.log(error);
-        const errorMessage =
-          "I'm sorry, I'm having trouble connecting to the server.";
-        removeTypingAnimation();
-        appendMessage("bot", errorMessage);
+      if (!formFilled) {
+        handleInitialQuestions(query);
+      } else {
+        appendTypingAnimation();
+        // Send the user's input to the backend
+        try {
+          const response = await fetch("http://localhost:3000/open-chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userInput: query }),
+          });
+          const data = await response.json();
+          removeTypingAnimation();
+          appendMessage("bot", data.response);
+        } catch (error) {
+          console.error(error);
+          removeTypingAnimation();
+          appendMessage(
+            "bot",
+            "Sorry, there was an error processing your request."
+          );
+        }
       }
+    }
+  }
+
+  function handleInitialQuestions(userResponse) {
+    if (currentQuestion === 0) {
+      if (userResponse.toLowerCase() === "yes") {
+        currentQuestion++;
+        appendMessage("bot", questions[currentQuestion].prompt);
+      } else {
+        appendMessage("bot", "Please type 'Yes' to start the conversation.");
+      }
+    } else if (currentQuestion > 0 && currentQuestion < questions.length - 1) {
+      userData[`question${currentQuestion}`] = userResponse;
+      currentQuestion++;
+      appendMessage(
+        "bot",
+        questions[currentQuestion].prompt,
+        questions[currentQuestion].options
+      );
+    } else if (currentQuestion === questions.length - 1) {
+      userData[`question${currentQuestion}`] = userResponse;
+      formFilled = true;
+      removeTypingAnimation();
+      appendMessage(
+        "bot",
+        "Thank you for providing all the information. I'll now analyze your answers and provide personalized career advice. Now you can ask me any query about your carrier choice."
+      );
+      appendMessage(
+        "bot",
+        "Now Tell Me How i Can assisst personalized career advice?"
+      );
     }
   }
 
@@ -466,7 +545,7 @@ document.addEventListener("DOMContentLoaded", function () {
     typingElements.forEach((element) => element.remove());
   }
 
-  function appendMessage(sender, message) {
+  function appendMessage(sender, message, options) {
     const chatbotContent = document.getElementById("chatbot-content");
 
     const messageElement = document.createElement("div");
@@ -479,17 +558,108 @@ document.addEventListener("DOMContentLoaded", function () {
     } else if (sender === "bot") {
       iconElement.classList.add("fa-robot");
     }
+    iconElement.style.marginLeft = "5px"; // Add some space between the icon and the message bubble
 
     const messageBubble = document.createElement("div");
     messageBubble.style.wordWrap = "break-word";
     messageBubble.style.padding = "12px";
     messageBubble.style.borderRadius = "10px";
     messageBubble.style.maxWidth = "80%";
-    messageBubble.innerHTML = message;
+    messageBubble.innerHTML = message.replace(/\n/g, "<br>");
 
-    messageElement.appendChild(iconElement);
-    messageElement.appendChild(messageBubble);
+    if (sender === "user") {
+      // For user messages, append the message bubble first, then the icon
+      messageElement.appendChild(messageBubble);
+      messageElement.appendChild(iconElement);
+    } else {
+      // For bot messages, append the icon first, then the message bubble
+      messageElement.appendChild(iconElement);
+      messageElement.appendChild(messageBubble);
+    }
+
+    if (options) {
+      const buttonsContainer = document.createElement("div");
+      buttonsContainer.classList.add("buttons-container");
+
+      options.forEach((option) => {
+        const button = document.createElement("button");
+        button.textContent = option.text;
+        button.classList.add("chatbot-option-button");
+        button.onclick = () => handleInitialQuestions(option.value);
+        buttonsContainer.appendChild(button);
+      });
+
+      messageElement.appendChild(buttonsContainer);
+    }
+
     chatbotContent.appendChild(messageElement);
     chatbotContent.scrollTop = chatbotContent.scrollHeight;
+  }
+
+  function showChatOptions() {
+    const optionsContainer = document.createElement("div");
+    optionsContainer.classList.add("chat-options");
+
+    const careerChatButton = document.createElement("button");
+    careerChatButton.textContent = "Start Career Chat";
+    careerChatButton.onclick = () => startCareerChat();
+    optionsContainer.appendChild(careerChatButton);
+
+    const openChatButton = document.createElement("button");
+    openChatButton.textContent = "Open Chat";
+    openChatButton.onclick = () => openGeneralChat();
+    optionsContainer.appendChild(openChatButton);
+
+    chatbotContent.appendChild(optionsContainer);
+  }
+
+  function startCareerChat() {
+    // Remove chat options
+    document.querySelector(".chat-options").remove();
+    // Set formFilled to false to indicate the start of the career chat
+    formFilled = false;
+    // Start the career chat by asking the first question
+    appendMessage("bot", questions[currentQuestion].prompt);
+  }
+
+  function openGeneralChat() {
+    // Remove chat options
+    document.querySelector(".chat-options").remove();
+    // Set formFilled to true to indicate that the chatbot should not ask any questions
+    formFilled = true;
+    // Inform the user that they are in the general chat
+    appendMessage(
+      "bot",
+      "You are now in the general chat. How can I assist you?"
+    );
+    // Handle general chat by sending a request to the backend
+    chatbotContent.addEventListener("keyup", async function (event) {
+      if (event.key === "Enter") {
+        const userInput = chatbotInput.value.trim();
+        if (userInput !== "") {
+          try {
+            appendTypingAnimation();
+            const response = await fetch("http://localhost:3000/open-chat", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ userInput }),
+            });
+
+            const data = await response.json();
+            removeTypingAnimation();
+            appendMessage("bot", data.response);
+          } catch (error) {
+            console.error(error);
+            appendMessage(
+              "bot",
+              "Sorry, there was an error processing your request."
+            );
+          }
+          chatbotInput.value = "";
+        }
+      }
+    });
   }
 });

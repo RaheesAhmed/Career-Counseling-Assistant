@@ -128,6 +128,7 @@ Use the following  context to answer the question and provide helpful advice to 
 // const userData =
 //   "Suppose I have 85% in my matriculation in science subjects, which colleges I can opt in Karachi?";
 
-//runEmbeddings(userData);
+// const response = runEmbeddings(userData);
+// console.log("User Data", response);
 
 export default runEmbeddings;

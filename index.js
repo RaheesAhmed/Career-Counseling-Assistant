@@ -30,6 +30,23 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+app.post("/open-chat", async (req, res) => {
+  try {
+    let { userInput } = req.body;
+
+    console.log("User Data", userInput);
+
+    // Convert user data to a format suitable for the prompt template
+
+    const response = await runEmbeddings(userInput);
+    res.json({ response: response });
+    console.log("Response Received", response);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("An error occurred");
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

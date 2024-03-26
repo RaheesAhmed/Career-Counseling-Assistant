@@ -41,9 +41,6 @@ Open your browser and go to `localhost:3000` to test the chatbot.
 
 ## Change the Knowledge Base Docs:
 
-```
-add any file you want to add as knowledgebase
 
-```
-
-You can change your documents here `file: fs.createReadStream("Chatbot Data.docx")`,
+You can change your documents here in `Data` folder.Simply 
+If you want to add more files just delete the Data.Index folder and run the chatbot again and it will take all new files.

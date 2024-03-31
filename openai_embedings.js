@@ -6,23 +6,15 @@ import { CSVLoader } from "langchain/document_loaders/fs/csv";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
 import { ConversationalRetrievalQAChain } from "langchain/chains";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { pull } from "langchain/hub";
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 
-// Import OpenAI language model and other related modules
-import { OpenAI } from "@langchain/openai";
-import { RetrievalQAChain } from "langchain/chains";
 import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
 import { OpenAIEmbeddings, ChatOpenAI } from "@langchain/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { BufferMemory } from "langchain/memory";
-// Import dotenv for loading environment variables and fs for file system operations
+
 import dotenv from "dotenv";
 import fs from "fs";
-import readline from "readline";
+
 dotenv.config();
 
 // Initialize the document loader with supported file formats

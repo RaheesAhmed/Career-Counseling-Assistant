@@ -5,7 +5,7 @@ import { TextLoader } from "langchain/document_loaders/fs/text";
 import { CSVLoader } from "langchain/document_loaders/fs/csv";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
-
+import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { pull } from "langchain/hub";
 import { StringOutputParser } from "@langchain/core/output_parsers";
@@ -18,10 +18,11 @@ import { RetrievalQAChain } from "langchain/chains";
 import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
 import { OpenAIEmbeddings, ChatOpenAI } from "@langchain/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-
+import { BufferMemory } from "langchain/memory";
 // Import dotenv for loading environment variables and fs for file system operations
 import dotenv from "dotenv";
 import fs from "fs";
+import readline from "readline";
 dotenv.config();
 
 // Initialize the document loader with supported file formats
@@ -51,8 +52,56 @@ function normalizeDocuments(docs) {
   });
 }
 
+const OPEN_CHAT_PROMPT = `
+Given the following conversation and a follow up question, return the conversation history excerpt that includes any relevant context to the question if it exists and rephrase the follow up question to be a standalone question.
+Chat History:
+{chat_history}
+Follow Up Input: {question}
+Your answer should follow the following format:
+\`\`\`
+Use the following pieces of context to answer the users question.
+
+your name is Nexa, and you are a friendly career counseling chatbot. You are having a conversation with a human. You specialize in personalized advice for students in Pakistan. Your goal is to help users make informed decisions about their future career paths based on their age,
+
+If you don't know the answer, just say that you don't know, don't try to make up an answer.
+----------------
+<Relevant chat history excerpt as context here>
+Standalone question: <Rephrased question here>
+\`\`\`
+Your answer:
+
+`;
+
+const CAREER_CHAT_PROMPT = `
+You are a friendly career counseling chatbot your name is Nexa,,having a conversation with a human.You 
+are a , specializing in personalized advice for students 
+in Pakistan. Your goal is to help users make informed 
+decisions about their future career paths based on their 
+age, gender, educational background, interests, goals, 
+strengths, weaknesses, and financial situation. Use 
+the information provided by the user and the context 
+to categorize them into one of the target audiences 
+and provide tailored advice.When you recieved the user Data Greet him/her and ask for the question.
+
+Given the following conversation and a follow up question, return the conversation history excerpt that includes any relevant context to the question if it exists and rephrase the follow up question to be a standalone question.
+Chat History:
+{chat_history}
+Follow Up Input: {question}
+Your answer should follow the following format:
+\`\`\`
+
+Use the following pieces of context to answer the users question.
+If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+Dear [add user name], considering your current situation, I suggest you these [field name], [field name], [field name] career paths. You have the option to do [degree/program name] or [[degree/program name] in these fields from [Uni Name/Institute Name] or [Uni Name/Institute Name]
+----------------
+<Relevant chat history excerpt as context here>
+Standalone question: <Rephrased question here>
+\`\`\`
+Your answer:`;
+
 // Define the main function to run the entire process
-const runEmbeddings = async (userData) => {
+const runEmbeddings = async (userInput, chatType) => {
   try {
     let vectorStore;
 
@@ -71,6 +120,7 @@ const runEmbeddings = async (userData) => {
       console.log("Creating new vector store...");
       const textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1500,
+        chunkOverlap: 250,
       });
       const normalizedDocs = normalizeDocuments(docs);
       const splitDocs = await textSplitter.createDocuments(normalizedDocs);
@@ -78,56 +128,49 @@ const runEmbeddings = async (userData) => {
       //  Generate the vector store from the documents
       vectorStore = await HNSWLib.fromDocuments(
         splitDocs,
-        new OpenAIEmbeddings()
+        new OpenAIEmbeddings({ model: "text-embedding-3-small" })
       );
       //  Save the vector store to the specified path
       await vectorStore.save(VECTOR_STORE_PATH);
 
       console.log("Vector store created.");
     }
-    const retriever = vectorStore.asRetriever({
-      k: 6,
-      searchType: "similarity",
-    });
-    const template = `
-    You are a career counseling assistant named Nexa, specializing in personalized advice for students in Pakistan. Your goal is to help users make informed decisions about their future career paths based on their age, gender, educational background, interests, goals, strengths, weaknesses, and financial situation. Use the information provided by the user and the context to categorize them into one of the target audiences and provide tailored advice.
-    
-    
-    
-Use the following  context to answer the question and provide helpful advice to the user.
 
-    {context}
-    
-    Question: {question}
-    
-    Helpful Answer:`;
+    const fasterModel = new ChatOpenAI({
+      modelName: "gpt-3.5-turbo-16k",
+    });
+    const slowerModel = new ChatOpenAI({
+      modelName: "gpt-3.5-turbo",
+    });
 
-    const customRagPrompt = PromptTemplate.fromTemplate(template);
-    const llm = new ChatOpenAI({
-      model: "gpt-3.5-turbo-16k",
-      temperature: 0,
-    });
-    const ragChain = await createStuffDocumentsChain({
-      llm,
-      prompt: customRagPrompt,
-      outputParser: new StringOutputParser(),
-    });
-    const context = await retriever.getRelevantDocuments(userData);
+    let prompt = chatType === "career" ? CAREER_CHAT_PROMPT : OPEN_CHAT_PROMPT;
 
-    const res = await ragChain.invoke({
-      question: userData,
-      context,
-    });
+    const chain = ConversationalRetrievalQAChain.fromLLM(
+      slowerModel,
+      vectorStore.asRetriever({ k: 3, searchType: "similarity" }),
+      {
+        returnSourceDocuments: false,
+        memory: new BufferMemory({
+          memoryKey: "chat_history",
+          inputKey: "question",
+          outputKey: "text",
+          returnMessages: true,
+        }),
+        questionGeneratorChainOptions: {
+          llm: fasterModel,
+          template: prompt,
+        },
+      }
+    );
+
+    //console.log("Running Chains...", chain);
+    const res = await chain.invoke({ question: userInput });
+    console.log(res);
+
     return res;
   } catch (error) {
     console.error(error);
   }
 };
-
-// const userData =
-//   "Suppose I have 85% in my matriculation in science subjects, which colleges I can opt in Karachi?";
-
-// const response = runEmbeddings(userData);
-// console.log("User Data", response);
 
 export default runEmbeddings;

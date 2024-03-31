@@ -8,4 +8,5 @@ VectorDatabase.index
 app.js
 old_code.js
 chatbot.js
-
+Documents.index
+langchain.js

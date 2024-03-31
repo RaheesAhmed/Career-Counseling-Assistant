@@ -362,27 +362,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!formFilled) {
         handleInitialQuestions(query);
       } else {
-        appendTypingAnimation();
-        // Send the user's input to the backend
-        try {
-          const response = await fetch("http://localhost:3000/open-chat", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ userInput: query }),
-          });
-          const data = await response.json();
-          removeTypingAnimation();
-          appendMessage("bot", data.response);
-        } catch (error) {
-          console.error(error);
-          removeTypingAnimation();
-          appendMessage(
-            "bot",
-            "Sorry, there was an error processing your request."
-          );
-        }
+        await sendOpenChatInputToBackend(query);
       }
     }
   }
@@ -395,26 +375,15 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         appendMessage("bot", "Please type 'Yes' to start the conversation.");
       }
-    } else if (currentQuestion > 0 && currentQuestion < questions.length - 1) {
+    } else if (currentQuestion > 0 && currentQuestion < questions.length) {
       userData[`question${currentQuestion}`] = userResponse;
       currentQuestion++;
-      appendMessage(
-        "bot",
-        questions[currentQuestion].prompt,
-        questions[currentQuestion].options
-      );
-    } else if (currentQuestion === questions.length - 1) {
-      userData[`question${currentQuestion}`] = userResponse;
-      formFilled = true;
-      removeTypingAnimation();
-      appendMessage(
-        "bot",
-        "Thank you for providing all the information. I'll now analyze your answers and provide personalized career advice. Now you can ask me any query about your carrier choice."
-      );
-      appendMessage(
-        "bot",
-        "Now Tell Me How i Can assisst personalized career advice?"
-      );
+      if (currentQuestion < questions.length) {
+        appendMessage("bot", questions[currentQuestion].prompt);
+      } else {
+        // All questions answered, send data to backend
+        sendCareerDataToBackend();
+      }
     }
   }
 
@@ -558,5 +527,51 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
     });
+  }
+
+  // Function to send career chat data to backend
+  async function sendCareerDataToBackend() {
+    try {
+      appendTypingAnimation();
+      const response = await fetch("http://localhost:3000/career-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userData: userData }),
+      });
+      const data = await response.json();
+      appendMessage("bot", data.response);
+      removeTypingAnimation();
+    } catch (error) {
+      console.error(error);
+      appendMessage(
+        "bot",
+        "Sorry, there was an error processing your request."
+      );
+    }
+  }
+
+  // Function to send open chat input to backend
+  async function sendOpenChatInputToBackend(userInput) {
+    try {
+      appendTypingAnimation();
+      const response = await fetch("http://localhost:3000/open-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userInput: userInput }),
+      });
+      const data = await response.json();
+      appendMessage("bot", data.response);
+      removeTypingAnimation();
+    } catch (error) {
+      console.error(error);
+      appendMessage(
+        "bot",
+        "Sorry, there was an error processing your request."
+      );
+    }
   }
 });

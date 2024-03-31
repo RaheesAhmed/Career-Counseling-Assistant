@@ -85,7 +85,7 @@ Your answer should follow the following format:
 Use the following pieces of context to answer the users question.
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
-Dear [add user name], considering your current situation, I suggest you these [field name], [field name], [field name] career paths. You have the option to do [degree/program name] or [[degree/program name] in these fields from [Uni Name/Institute Name] or [Uni Name/Institute Name]
+Dear [add user name], considering your current situation, I suggest you these [add field name], [add field name], [add field name] career paths. You have the option to do [add degree/program name] or [ad degree/program name] in these fields from [add Uni Name/Institute Name] or [Uni add Name/Institute Name]
 ----------------
 <Relevant chat history excerpt as context here>
 Standalone question: <Rephrased question here>

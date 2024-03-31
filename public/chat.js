@@ -352,41 +352,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Update the send message function to format and send chat history
-  async function sendMessage() {
-    const query = chatbotInput.value.trim();
-    if (query !== "") {
-      appendMessage("user", query);
-      chatbotInput.value = "";
-
-      if (!formFilled) {
-        handleInitialQuestions(query);
-      } else {
-        await sendOpenChatInputToBackend(query);
-      }
-    }
-  }
-
-  function handleInitialQuestions(userResponse) {
-    if (currentQuestion === 0) {
-      if (userResponse.toLowerCase() === "yes") {
-        currentQuestion++;
-        appendMessage("bot", questions[currentQuestion].prompt);
-      } else {
-        appendMessage("bot", "Please type 'Yes' to start the conversation.");
-      }
-    } else if (currentQuestion > 0 && currentQuestion < questions.length) {
-      userData[`question${currentQuestion}`] = userResponse;
-      currentQuestion++;
-      if (currentQuestion < questions.length) {
-        appendMessage("bot", questions[currentQuestion].prompt);
-      } else {
-        // All questions answered, send data to backend
-        sendCareerDataToBackend();
-      }
-    }
-  }
-
   function appendTypingAnimation() {
     const typingElement = document.createElement("div");
     typingElement.classList.add("typing-animation");
@@ -529,6 +494,40 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  async function sendMessage() {
+    const query = chatbotInput.value.trim();
+    if (query !== "") {
+      appendMessage("user", query);
+      chatbotInput.value = "";
+
+      if (!formFilled) {
+        handleInitialQuestions(query);
+      } else {
+        await sendOpenChatInputToBackend(query);
+      }
+    }
+  }
+
+  function handleInitialQuestions(userResponse) {
+    if (currentQuestion === 0) {
+      if (userResponse.toLowerCase() === "yes") {
+        currentQuestion++;
+        appendMessage("bot", questions[currentQuestion].prompt);
+      } else {
+        appendMessage("bot", "Please type 'Yes' to start the conversation.");
+      }
+    } else if (currentQuestion > 0 && currentQuestion < questions.length) {
+      userData[`question${currentQuestion}`] = userResponse;
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
+        appendMessage("bot", questions[currentQuestion].prompt);
+      } else {
+        // All questions answered, send data to backend
+        sendCareerDataToBackend();
+      }
+    }
+  }
+
   // Function to send career chat data to backend
   async function sendCareerDataToBackend() {
     try {
@@ -543,6 +542,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
       appendMessage("bot", data.response);
       removeTypingAnimation();
+      formFilled = true; // Set formFilled to true after sending data to backend
+      currentQuestion = 0; // Reset currentQuestion for the next conversation
     } catch (error) {
       console.error(error);
       appendMessage(

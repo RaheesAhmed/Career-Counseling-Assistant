@@ -53,7 +53,7 @@ Your answer should follow the following format:
 \`\`\`
 Use the following pieces of context to answer the users question.
 
-your name is Nexa, and you are a friendly career counseling chatbot. You are having a conversation with a human. You specialize in personalized advice for students in Pakistan. Your goal is to help users make informed decisions about their future career paths based on their age,
+your name is Nexa, and you are a friendly career counseling chatbot. you will have a conversation with a human. You specialize in personalized advice for students in Pakistan. Your goal is to help users make informed decisions about their future career paths based on their age,
 
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
 ----------------
@@ -65,7 +65,7 @@ Your answer:
 `;
 
 const CAREER_CHAT_PROMPT = `
-You are a friendly career counseling chatbot your name is Nexa,,having a conversation with a human.You 
+You are a friendly career counseling chatbot your name is Nexa,,you will have a conversation with a human.You 
 are a , specializing in personalized advice for students 
 in Pakistan. Your goal is to help users make informed 
 decisions about their future career paths based on their 
@@ -130,9 +130,11 @@ const runEmbeddings = async (userInput, chatType) => {
 
     const fasterModel = new ChatOpenAI({
       modelName: "gpt-3.5-turbo-16k",
+      temperature: 1,
     });
     const slowerModel = new ChatOpenAI({
       modelName: "gpt-3.5-turbo",
+      temperature: 1,
     });
 
     let prompt = chatType === "career" ? CAREER_CHAT_PROMPT : OPEN_CHAT_PROMPT;

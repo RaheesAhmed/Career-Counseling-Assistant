@@ -257,6 +257,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatbotToggle = document.getElementById("chatbot-toggle");
   const chatbotInput = document.getElementById("chatbot-text");
   const chatbotContent = document.getElementById("chatbot-content");
+  const chatbotformcontainer = document.getElementById(
+    "chatbot-form-container"
+  );
 
   const toggleicon = document.getElementById("toggleicon");
 
@@ -299,48 +302,41 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Close chatbot window
-  chatbotToggle.addEventListener("click", function () {
-    console.log("chatbotToggle : " + isChatbotOpen);
-
-    if (isChatbotOpen) {
-      minimizeChatbot();
-    } else {
-      maximizeChatbot();
-    }
-  });
-
-  // Close chatbot window
   toggleicon.addEventListener("click", function () {
     console.log("toggleicon : " + isChatbotOpen);
     if (isChatbotOpen) {
       minimizeChatbot();
     } else {
       maximizeChatbot();
+      showChatOptions();
     }
   });
 
-  // Minimize chatbot
+  const toggleIcon = document.getElementById("toggleicon");
+  // Close chatbot window
+  toggleIcon.addEventListener("click", function () {
+    if (isChatbotOpen) {
+      minimizeChatbot();
+    } else {
+      maximizeChatbot();
+    }
+  });
+
+  function maximizeChatbot() {
+    chatbotWindow.style.display = "block";
+    chatbotToggle.innerHTML =
+      '<i id="toggleicon" class="fas fa-chevron-down toggleicon"></i>';
+    isChatbotOpen = true;
+    // Call showChatOptions here if it's the first time opening the chatbot
+    if (!document.querySelector(".chat-options")) {
+      showChatOptions();
+    }
+  }
   function minimizeChatbot() {
     chatbotWindow.style.display = "none";
-    chatbotformcontainer.style.display = "none";
     chatbotToggle.innerHTML =
-      '<i id="toggleicon" class="fas fa-chevron-up"></i>';
+      '<i id="toggleicon" class="fas fa-chevron-up toggleicon"></i>';
     isChatbotOpen = false;
-  }
-
-  // Maximize chatbot
-  function maximizeChatbot() {
-    if (!formfilled) {
-      chatbotformcontainer.style.display = "flex";
-    } else {
-      chatbotWindow.style.display = "block";
-      if (!isChatbotOpen) {
-        showChatOptions();
-      }
-    }
-    chatbotToggle.innerHTML =
-      '<i id="toggleicon" class="fas fa-chevron-down"></i>';
-    isChatbotOpen = true;
   }
 
   document
@@ -396,10 +392,11 @@ document.addEventListener("DOMContentLoaded", function () {
     messageBubble.style.padding = "12px";
     messageBubble.style.borderRadius = "10px";
     messageBubble.style.maxWidth = "80%";
-    messageBubble.innerHTML = message.replace(/\n/g, "<br>");
+    messageBubble.innerHTML = message
+      .replace(/\*\*(.*?)\*\*/g, "<bold></bold>")
+      .replace(/\n/g, "<br>");
 
     if (sender === "user") {
-      // For user messages, append the message bubble first, then the icon
       messageElement.appendChild(messageBubble);
       messageElement.appendChild(iconElement);
     } else {
@@ -428,20 +425,23 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function showChatOptions() {
-    const optionsContainer = document.createElement("div");
-    optionsContainer.classList.add("chat-options");
+    // Check if chat options already exist
+    if (!document.querySelector(".chat-options")) {
+      const optionsContainer = document.createElement("div");
+      optionsContainer.classList.add("chat-options");
 
-    const careerChatButton = document.createElement("button");
-    careerChatButton.textContent = "Start Career Chat";
-    careerChatButton.onclick = () => startCareerChat();
-    optionsContainer.appendChild(careerChatButton);
+      const careerChatButton = document.createElement("button");
+      careerChatButton.textContent = "Start Career Chat";
+      careerChatButton.onclick = () => startCareerChat();
+      optionsContainer.appendChild(careerChatButton);
 
-    const openChatButton = document.createElement("button");
-    openChatButton.textContent = "Open Chat";
-    openChatButton.onclick = () => openGeneralChat();
-    optionsContainer.appendChild(openChatButton);
+      const openChatButton = document.createElement("button");
+      openChatButton.textContent = "Open Chat";
+      openChatButton.onclick = () => openGeneralChat();
+      optionsContainer.appendChild(openChatButton);
 
-    chatbotContent.appendChild(optionsContainer);
+      chatbotContent.appendChild(optionsContainer);
+    }
   }
 
   function startCareerChat() {
@@ -483,6 +483,7 @@ document.addEventListener("DOMContentLoaded", function () {
             appendMessage("bot", data.response);
           } catch (error) {
             console.error(error);
+            removeTypingAnimation();
             appendMessage(
               "bot",
               "Sorry, there was an error processing your request."
@@ -546,6 +547,7 @@ document.addEventListener("DOMContentLoaded", function () {
       currentQuestion = 0; // Reset currentQuestion for the next conversation
     } catch (error) {
       console.error(error);
+      removeTypingAnimation();
       appendMessage(
         "bot",
         "Sorry, there was an error processing your request."
@@ -569,6 +571,7 @@ document.addEventListener("DOMContentLoaded", function () {
       removeTypingAnimation();
     } catch (error) {
       console.error(error);
+      removeTypingAnimation();
       appendMessage(
         "bot",
         "Sorry, there was an error processing your request."

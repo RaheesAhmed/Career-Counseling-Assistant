@@ -12,9 +12,11 @@
   "dependencies": {
     "@dqbd/tiktoken": "^1.0.7",
     "@langchain/community": "^0.0.41",
+    "@langchain/core": "^0.1.52",
     "@langchain/openai": "^0.0.21",
     "@supabase/supabase-js": "^2.41.1",
     "cheerio": "^1.0.0-rc.12",
+    "chromadb": "^1.8.1",
     "cors": "^2.8.5",
     "d3-dsv": "^2.0.0",
     "dotenv": "^16.4.5",

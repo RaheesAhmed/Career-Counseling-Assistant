@@ -8,7 +8,7 @@
 
 /* Chat options buttons */
 .chat-options button {
-    background-color: #163F77;
+    background-color: black;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -32,7 +32,7 @@
 
 /* Chatbot header */
 #chatbot-header {
-    background-color: #005A8D;
+    background-color: black;
     color: white;
     padding: 10px 20px;
     border-radius: 10px 10px 0 0;
@@ -96,7 +96,7 @@
     background-color: transparent;
     border: none;
     cursor: pointer;
-    color: #005A8D;
+    color: black;
     font-size: 24px;
     margin-left: 10px;
 }
@@ -121,7 +121,7 @@
 }
 
 .user-message div {
-    background-color: #0073B1;
+    background-color: black;
     color: white;
 }
 
@@ -143,7 +143,7 @@
 }
 
 .bot-message .fa-robot {
-    color: #005A8D;
+    color: black;
 }
 
 /* Typing animation */
@@ -163,7 +163,7 @@
 .typing-animation .dot {
     height: 8px;
     width: 8px;
-    background-color: #005A8D;
+    background-color: black;
     border-radius: 50%;
     margin: 0 4px;
     opacity: 0;

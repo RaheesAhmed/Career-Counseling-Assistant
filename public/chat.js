@@ -1,4 +1,4 @@
-const ServerAdd = "http://localhost:3000/chat";
+const ServerAdd = "http://localhost:3000";
 
 document.addEventListener("DOMContentLoaded", function () {
   const styleElement = document.createElement("style");
@@ -16,10 +16,10 @@ document.addEventListener("DOMContentLoaded", function () {
       min-width: 360px;
       z-index: 1000; /* Ensure chatbot is on top */
   }
-  
+
   /* Chatbot header */
   #chatbot-header {
-      background-color: #005A8D;
+      background-color: black;
       color: white;
       padding: 10px 20px;
       border-radius: 10px 10px 0 0;
@@ -28,23 +28,23 @@ document.addEventListener("DOMContentLoaded", function () {
       justify-content: space-between;
       align-items: center;
   }
-  
+
   #chatbot-title {
       font-size: 18px;
       font-weight: bold;
   }
-  
+
   #chatbot-toggle {
       background-color: transparent;
       border: none;
       cursor: pointer;
   }
-  
+
   #toggleicon {
       font-size: 20px;
       color: white;
   }
-  
+
   /* Chatbot window */
   #chatbot-window {
       display: none;
@@ -52,14 +52,14 @@ document.addEventListener("DOMContentLoaded", function () {
       padding: 10px;
       overflow: hidden;
   }
-  
+
   /* Chatbot content */
   #chatbot-content {
       height: 335px;
       overflow-y: auto;
       padding: 10px;
   }
-  
+
   /* Chatbot input area */
   #chatbot-input {
       display: flex;
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
       border-radius: 8px;
       margin: 10px;
   }
-  
+
   #chatbot-text {
       flex: 1;
       padding: 5px 10px;
@@ -78,12 +78,12 @@ document.addEventListener("DOMContentLoaded", function () {
       background-color: transparent;
       outline: none;
   }
-  
+
   #chatbot-send {
       background-color: transparent;
       border: none;
       cursor: pointer;
-      color: #005A8D;
+      color: black;
       font-size: 24px;
       margin-left: 10px;
   }
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /* Chat options buttons */
 .chat-options button {
-    background-color: #163F77;
+    background-color: black;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -110,11 +110,11 @@ document.addEventListener("DOMContentLoaded", function () {
       display: flex;
       margin: 8px 0;
   }
-  
+
   .user-message {
       justify-content: flex-end;
   }
-  
+
   .user-message div,
   .bot-message div {
       max-width: 70%;
@@ -122,17 +122,17 @@ document.addEventListener("DOMContentLoaded", function () {
       border-radius: 10px;
       word-wrap: break-word;
   }
-  
+
   .user-message div {
       background-color: #e9e9e9;
       color: #4A4A4A;
   }
-  
+
   .bot-message div {
       background-color: white;
       color: #4A4A4A;
   }
-  
+
   /* Icons */
   .user-message .fas,
   .bot-message .fas {
@@ -140,15 +140,15 @@ document.addEventListener("DOMContentLoaded", function () {
       margin: 0 5px;
       color: #4A4A4A;
   }
-  
+
   .user-message .fa-user {
-      color: #005a8d;
+      color: black;
   }
-  
+
   .bot-message .fa-robot {
-      color: #005A8D;
+      color: black;
   }
-  
+
   /* Typing animation */
   .typing-animation {
       display: flex;
@@ -157,22 +157,22 @@ document.addEventListener("DOMContentLoaded", function () {
       margin: 8px 0;
       padding: 10px;
   }
-  
+
   .typing-animation .dot-container {
       display: flex;
       align-items: center;
   }
-  
+
   .typing-animation .dot {
       height: 8px;
       width: 8px;
-      background-color: #005A8D;
+      background-color: black;
       border-radius: 50%;
       margin: 0 4px;
       opacity: 0;
       animation: showDot 1s infinite;
   }
-  
+
   @keyframes showDot {
       0%, 100% { opacity: 0; transform: translateY(0); }
       25% { opacity: 1; transform: translateY(-2px); }
@@ -227,7 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <button id="chatbot-toggle"><i id="toggleicon" class="fas fa-chevron-up"></i></button>
             </div>
 
-            
+
 
             <div id="chatbot-window">
                 <div id="chatbot-content">
@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
             </div>
         </div>
-        
+
     `;
 
   document.body.appendChild(chatbotContainer);
@@ -392,9 +392,7 @@ document.addEventListener("DOMContentLoaded", function () {
     messageBubble.style.padding = "12px";
     messageBubble.style.borderRadius = "10px";
     messageBubble.style.maxWidth = "80%";
-    messageBubble.innerHTML = message
-      .replace(/\*\*(.*?)\*\*/g, "<bold></bold>")
-      .replace(/\n/g, "<br>");
+    messageBubble.innerHTML = message;
 
     if (sender === "user") {
       messageElement.appendChild(messageBubble);
@@ -533,7 +531,7 @@ document.addEventListener("DOMContentLoaded", function () {
   async function sendCareerDataToBackend() {
     try {
       appendTypingAnimation();
-      const response = await fetch("http://localhost:3000/career-chat", {
+      const response = await fetch(`${ServerAdd}/career-chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -559,19 +557,30 @@ document.addEventListener("DOMContentLoaded", function () {
   async function sendOpenChatInputToBackend(userInput) {
     try {
       appendTypingAnimation();
-      const response = await fetch("http://localhost:3000/open-chat", {
+      // Get the current chat history
+      const chatHistory = JSON.parse(
+        sessionStorage.getItem("chatHistory") || "[]"
+      );
+      // Add the user's input to the chat history
+      chatHistory.push({ sender: "user", message: userInput });
+      // Send the updated chat history to the backend
+      const response = await fetch(`${ServerAdd}/open-chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userInput: userInput }),
+        body: JSON.stringify({ userInput }),
       });
       const data = await response.json();
+      // Add the bot's response to the chat history
+      chatHistory.push({ sender: "bot", message: data.response });
+      // Update the chat history in session storage
+      sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory));
       appendMessage("bot", data.response);
       removeTypingAnimation();
     } catch (error) {
       console.error(error);
-      removeTypingAnimation();
+
       appendMessage(
         "bot",
         "Sorry, there was an error processing your request."

@@ -1,148 +1,134 @@
-// 1. Import document loaders for different file formats
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { createClient } from "@supabase/supabase-js";
+import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
+import { OpenAIEmbeddings } from "@langchain/openai";
 import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
-// import { JSONLoader } from "langchain/document_loaders/fs/json";
+import { JSONLoader } from "langchain/document_loaders/fs/json";
 import { TextLoader } from "langchain/document_loaders/fs/text";
 import { CSVLoader } from "langchain/document_loaders/fs/csv";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { DocxLoader } from "langchain/document_loaders/fs/docx";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-// 2. Import OpenAI language model and other related modules
 import { OpenAI } from "@langchain/openai";
+import { BufferWindowMemory } from "langchain/memory";
 import { RetrievalQAChain } from "langchain/chains";
-import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
-import { OpenAIEmbeddings } from "@langchain/openai";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { ChatMessageHistory } from "langchain/stores/message/in_memory";
-// 3. Import Tiktoken for token counting
-import { Tiktoken } from "@dqbd/tiktoken/lite";
-import { load } from "@dqbd/tiktoken/load";
-import registry from "@dqbd/tiktoken/registry.json" assert { type: "json" };
-import models from "@dqbd/tiktoken/model_to_encoding.json" assert { type: "json" };
-
-// 4. Import dotenv for loading environment variables and fs for file system operations
-import dotenv from "dotenv";
-import fs from "fs";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from "@langchain/core/prompts";
+import {
+  RunnableSequence,
+  RunnablePassthrough,
+} from "@langchain/core/runnables";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { formatDocumentsAsString } from "langchain/util/document";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 dotenv.config();
+const __dirname = path.resolve();
+const privateKey = process.env.SUPABASE_PRIVATE_KEY;
+const url = process.env.SUPABASE_URL;
+const openaiApiKey = process.env.OPENAI_API_KEY;
 
-// 5. Initialize the document loader with supported file formats
-const loader = new DirectoryLoader("./data", {
-  ".json": (path) => new JSONLoader(path),
-  ".txt": (path) => new TextLoader(path),
-  ".csv": (path) => new CSVLoader(path),
-  ".pdf": (path) => new PDFLoader(path),
-  ".docx": (path) => new DocxLoader(path),
+if (!privateKey || !url || !openaiApiKey) {
+  throw new Error("Required environment variables are not set.");
+}
+
+const client = createClient(url, privateKey);
+const memory = new BufferWindowMemory({
+  returnMessages: true,
+  memoryKey: "chat_history",
+  k: 1,
 });
 
-// 6. Load documents from the specified directory
-console.log("Loading docs...");
-const docs = await loader.load();
-console.log("Docs loaded.");
+const loadDocuments = async (directoryPath) => {
+  console.log("Attempting to load documents from:", directoryPath);
+  if (!fs.existsSync(directoryPath)) {
+    console.error(`Directory does not exist: ${directoryPath}`);
+    return [];
+  }
 
-// 7. Define a function to calculate the cost of tokenizing the documents
-async function calculateCost() {
-  const modelName = "text-embedding-ada-002";
-  const modelKey = models[modelName];
-  const model = await load(registry[modelKey]);
-  const encoder = new Tiktoken(
-    model.bpe_ranks,
-    model.special_tokens,
-    model.pat_str
-  );
-  const tokens = encoder.encode(JSON.stringify(docs));
-  const tokenCount = tokens.length;
-  const ratePerThousandTokens = 0.0004;
-  const cost = (tokenCount / 1000) * ratePerThousandTokens;
-  encoder.free();
-  return cost;
-}
-
-const VECTOR_STORE_PATH = "Data.index";
-
-// 8. Define a function to normalize the content of the documents
-function normalizeDocuments(docs) {
-  return docs.map((doc) => {
-    if (typeof doc.pageContent === "string") {
-      return doc.pageContent;
-    } else if (Array.isArray(doc.pageContent)) {
-      return doc.pageContent.join("\n");
-    }
+  const loader = new DirectoryLoader(directoryPath, {
+    ".json": (path) => new JSONLoader(path),
+    ".txt": (path) => new TextLoader(path),
+    ".csv": (path) => new CSVLoader(path),
+    ".pdf": (path) => new PDFLoader(path),
+    ".docx": (path) => new DocxLoader(path),
   });
-}
 
-const questionAnsweringPrompt = ChatPromptTemplate.fromMessages([
-  [
-    "system",
-    "You are Nexa, a freindly  chatbot designed for personalized career counseling. Your goal is to assist users in making informed decisions about their future career paths based on their individual profiles. You specialize in providing advice to students in Pakistan transitioning from 10th grade/school/O-levels to Intermediate/A-levels or from 12th grade/college/Inter to university/bachelor's degree/associate degree/diploma.You will get name,academicStatus,percentageCgpa,fieldProgram,interests based on user data Answer the user's questions based on the below context:\n\n{context}",
-  ],
-  ["human", "{question}"],
-]);
+  try {
+    const documents = await loader.load();
+    console.log(`Loaded ${documents.length} documents.`);
+    return documents;
+  } catch (error) {
+    console.error("Failed to load documents:", error);
+    throw error;
+  }
+};
 
-const messageHistory = new ChatMessageHistory();
-// 9. Define the main function to run the entire process
-export const runForm = async (question) => {
-  // 10. Calculate the cost of tokenizing the documents
-  console.log("Calculating cost...");
-  const cost = await calculateCost();
-  console.log("Cost calculated:", cost);
+const model = new OpenAI({
+  modelName: "gpt-3.5-turbo",
+  temperature: 1,
+  maxTokens: 1000,
+});
 
-  // 11. Check if the cost is within the acceptable limit
-  if (cost <= 1) {
-    // 12. Initialize the OpenAI language model
-    const model = new OpenAI({
-      temperature: 1,
-      maxTokens: 300,
-      modelName: "gpt-3.5-turbo-1106",
-    });
+const systemPrompt = `You are Nexa, a freindly  chatbot designed for personalized career counseling. Your goal is to assist users in making informed decisions about their future career paths based on their individual profiles. You specialize in providing advice to students in Pakistan transitioning from 10th grade/school/O-levels to Intermediate/A-levels or from 12th grade/college/Inter to university/bachelor's degree/associate degree/diploma.You will get name,academicStatus,percentageCgpa,fieldProgram,interests based on user data Answer the user's questions based on the below context:\n\n{context}if you are not sure about the answer, please say "I am not sure about this, can you please provide more information? only respond about carreer paths and carrier counseling dont try to make up the answer if you dont know`;
 
-    let vectorStore;
+export const runform = async (query, chatType) => {
+  const dataPath = path.resolve(__dirname, "./data");
+  const docs = await loadDocuments(dataPath);
 
-    // 13. Check if an existing vector store is available
-    console.log("Checking for existing vector store...");
-    if (fs.existsSync(VECTOR_STORE_PATH)) {
-      // 14. Load the existing vector store
-      console.log("Loading existing vector store...");
-      vectorStore = await HNSWLib.load(
-        VECTOR_STORE_PATH,
-        new OpenAIEmbeddings()
-      );
-      console.log("Vector store loaded.");
-    } else {
-      // 15. Create a new vector store if one does not exist
-      console.log("Creating new vector store...");
-      const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
-      });
-      const normalizedDocs = normalizeDocuments(docs);
-      const splitDocs = await textSplitter.createDocuments(normalizedDocs);
+  if (!docs.length) {
+    console.log("No documents to process.");
+    return;
+  }
 
-      // 16. Generate the vector store from the documents
-      vectorStore = await HNSWLib.fromDocuments(
-        splitDocs,
-        new OpenAIEmbeddings()
-      );
-      // 17. Save the vector store to the specified path
-      await vectorStore.save(VECTOR_STORE_PATH);
+  const vectorStore = new SupabaseVectorStore(new OpenAIEmbeddings(), {
+    client,
+    tableName: "documents",
+    queryName: "match_documents",
+  });
 
-      console.log("Vector store created.");
-    }
-    await messageHistory.addMessage({
-      content: question,
-      additional_kwargs: {},
-    });
-    // 18. Create a retrieval chain using the language model and vector store
-    console.log("Creating retrieval chain...");
-    const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever(), {
-      prompt: questionAnsweringPrompt,
-      messageHistory: messageHistory,
-    });
+  console.log("Searching for similar documents...");
 
-    // 19. Query the retrieval chain with the specified question
+  const prompt = ChatPromptTemplate.fromMessages([
+    ["system", systemPrompt],
+    new MessagesPlaceholder("chat_history"),
+    ["human", "{query}"],
+  ]);
+
+  try {
+    //const searchResults = await vectorStore.similaritySearch(query, 1);
+
+    const chain = RunnableSequence.from([
+      RunnablePassthrough.assign({
+        context: async (input) => {
+          if ("chat_history" in input && input.chat_history.length > 0) {
+            const context = await vectorStore.similaritySearch(query, 1);
+            return formatDocumentsAsString(context);
+          }
+          return "";
+        },
+      }),
+      prompt,
+      model,
+      new StringOutputParser(),
+    ]);
+    let chat_history = [];
+
     console.log("Querying chain...");
-    const res = await chain.invoke({ query: question });
+    const res = await chain.invoke({
+      query: query,
+      chat_history,
+    });
+    chat_history.push(new HumanMessage(query));
+    chat_history.push(new AIMessage(res));
+    console.log("Querying chain Finished...");
+
     console.log({ res });
+
     return res;
-  } else {
-    // 20. If the cost exceeds the limit, skip the embedding process
-    console.log("The cost of embedding exceeds $1. Skipping embeddings.");
+  } catch (error) {
+    console.error("Search failed:", error);
   }
 };

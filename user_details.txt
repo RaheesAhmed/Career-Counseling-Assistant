@@ -24,6 +24,6 @@ Future Goals: {futureGoals}
 Additional Information: {additionalInfo}
 Based on the user's input, provide personalized career advice. Consider their city/location, financial background, interests, educational background, strengths, weaknesses, and future goals. Recommend suitable career paths, fields of study, and educational institutions. Provide clear and concise advice, and offer additional resources or links to support their decision-making process.
 
-WuIB8CVjTQqoQaFf
+TRS9zwry9aGmu0UB
 
 https://nexacareer-chatbott.replit.app/public/script.js

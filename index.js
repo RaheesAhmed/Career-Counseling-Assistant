@@ -4,6 +4,7 @@ import cors from "cors";
 import { askQuestion } from "./openai_embedings.js";
 import { runForm } from "./runForm.js";
 import { ask } from "./langchain.js";
+import { runModel } from "./supabase.js";
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -36,9 +37,9 @@ app.post("/career-chat", async (req, res) => {
     const { userData } = req.body;
     console.log("Career Chat User Data:", userData);
     const formattedUserData = formatUserData(userData);
-    const response = await ask(formattedUserData, chatType);
+    const response = await runModel(formattedUserData, chatType);
 
-    res.json({ response: response.text });
+    res.json({ response: response });
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred");
@@ -51,9 +52,9 @@ app.post("/open-chat", async (req, res) => {
     let chatType = "open";
     // askQuestion(userInput, chatType);
     console.log("Open Chat User Input:", userInput);
-    const response = await ask(userInput, chatType);
+    const response = await runModel(userInput, chatType);
     console.log("Open Chat Response:", response);
-    res.json({ response: response.text });
+    res.json({ response: response });
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred");

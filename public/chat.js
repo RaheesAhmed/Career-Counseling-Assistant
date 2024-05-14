@@ -580,7 +580,7 @@ document.addEventListener("DOMContentLoaded", function () {
       removeTypingAnimation();
     } catch (error) {
       console.error(error);
-
+      removeTypingAnimation();
       appendMessage(
         "bot",
         "Sorry, there was an error processing your request."

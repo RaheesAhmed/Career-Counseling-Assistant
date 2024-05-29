@@ -18,7 +18,6 @@ import { Tiktoken } from "@dqbd/tiktoken/lite";
 import { load } from "@dqbd/tiktoken/load";
 import registry from "@dqbd/tiktoken/registry.json" assert { type: "json" };
 import models from "@dqbd/tiktoken/model_to_encoding.json" assert { type: "json" };
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
 // 4. Import dotenv for loading environment variables and fs for file system operations
 import dotenv from "dotenv";
@@ -70,36 +69,26 @@ function normalizeDocuments(docs) {
   });
 }
 
-const formPrompt = ChatPromptTemplate.fromMessages([
+const carrerPrompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `You are Nexa, a friendly chatbot designed for personalized career counseling. Your goal is to assist users in making informed decisions about their future career paths based on their individual profiles. You specialize in providing advice to students in Pakistan transitioning from 10th grade/school/O-levels to Intermediate/A-levels or from 12th grade/college/Inter to university/bachelor's degree/associate degree/diploma.
+    `You are Nexa, a freindly chatbot designed for personalized career counseling. Your goal is to assist users in making informed decisions about their future career paths based on their individual profiles. You specialize in providing advice to students in Pakistan transitioning.Allow the user to ask open-ended questions within the career counseling domain and provide relevant answers.You will get name,academicStatus,percentageCgpa,fieldProgram,interests Response Format:- Start your response with Dear, considering your current situation, I suggest you these [add field name], [add field name], [add field name] career paths. You have the option to do  [add degree/program name] in these fields from [add Colleges Name/Institute Name] or [add University Name/Institute Name].if you dont know the answer dont try to make up the answer. Answer the user's questions based on the below context:\n\n{context}`,
+  ],
+  ["human", "{question}"],
+]);
 
-    You will get name, academicStatus, percentageCgpa, fieldProgram, and interests based on user data. Suggest the best colleges or universities to the user and give the response in the form of a report like JSON object. Always provide the response in the following JSON format:
-    
-    {{
-      "Name": "user name",
-      "Academic Status": "Academic Status",
-      "Percentage/CGPA": "Percentage/CGPA",
-      "Field/Program of Interest": "Field/Program of Interest",
-      "Interests": "Interests",
-      "Recommended Colleges or Universities": {{
-        "1.": "College/University 1",
-        "2.": "College/University 2",
-        "3.": "College/University 3",
-        "4.": "College/University 4"
-      }}
-    }}
-    
-    Always answer the user's questions based on the below context:
-    {context}`,
+const openPrompt = ChatPromptTemplate.fromMessages([
+  [
+    "system",
+    `You are Nexa, a freindly  chatbot designed for personalized career counseling. Your goal is to assist users in making informed decisions about their future career paths based on their individual profiles. You specialize in providing advice.You will get name,academicStatus,percentageCgpa,fieldProgram,interests, 
+     only respond about carreer paths and carrier counseling if you dont know the answer dont try to make up the answer. Answer the user's questions based on the below context:\n\n{context}`,
   ],
   ["human", "{question}"],
 ]);
 
 const messageHistory = new ChatMessageHistory();
 // 9. Define the main function to run the entire process
-export const ask = async (question, chatType) => {
+export const runModel = async (question, chatType) => {
   // 10. Calculate the cost of tokenizing the documents
   console.log("Calculating cost...");
   const cost = await calculateCost();
@@ -150,10 +139,11 @@ export const ask = async (question, chatType) => {
       additional_kwargs: {},
     });
 
+    const prompt = chatType === "career" ? carrerPrompt : openPrompt;
     // 18. Create a retrieval chain using the language model and vector store
     console.log("Creating retrieval chain...");
     const chain = RetrievalQAChain.fromLLM(model, vectorStore.asRetriever(), {
-      prompt: formPrompt,
+      prompt: prompt,
       messageHistory: messageHistory,
     });
 
@@ -167,3 +157,8 @@ export const ask = async (question, chatType) => {
     console.log("The cost of embedding exceeds $1. Skipping embeddings.");
   }
 };
+
+// const question =
+//   "Can you give me the names of some of the private colleges that have co-education system? ";
+
+// await ask(question, "open");

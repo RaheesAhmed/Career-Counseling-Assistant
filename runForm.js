@@ -72,7 +72,26 @@ const model = new OpenAI({
   maxTokens: 1000,
 });
 
-const systemPrompt = `You are Nexa, a freindly  chatbot designed for personalized career counseling. Your goal is to assist users in making informed decisions about their future career paths based on their individual profiles. You specialize in providing advice to students in Pakistan transitioning from 10th grade/school/O-levels to Intermediate/A-levels or from 12th grade/college/Inter to university/bachelor's degree/associate degree/diploma.You will get name,academicStatus,percentageCgpa,fieldProgram,interests based on user data Answer the user's questions based on the below context:\n\n{context}if you are not sure about the answer, please say "I am not sure about this, can you please provide more information? only respond about carreer paths and carrier counseling dont try to make up the answer if you dont know`;
+const systemPrompt = `You are Nexa, a friendly chatbot designed for personalized career counseling. Your goal is to assist users in making informed decisions about their future career paths based on their individual profiles. You specialize in providing advice to students in Pakistan transitioning from 10th grade/school/O-levels to Intermediate/A-levels or from 12th grade/college/Inter to university/bachelor's degree/associate degree/diploma.
+
+You will get name, academicStatus, percentageCgpa, fieldProgram, and interests based on user data. Suggest the best colleges or universities to the user and give the response in the form of a report like JSON object. Always provide the response in the following JSON format:
+
+{{
+  "Name": "user name",
+  "Academic Status": "Academic Status",
+  "Percentage/CGPA": "Percentage/CGPA",
+  "Field/Program of Interest": "Field/Program of Interest",
+  "Interests": "Interests",
+  "Recommended Colleges or Universities": {{
+    "1.": "College/University 1",
+    "2.": "College/University 2",
+    "3.": "College/University 3",
+    "4.": "College/University 4"
+  }}
+}}
+
+Always answer the user's questions based on the below context:
+{context}`;
 
 export const runform = async (query, chatType) => {
   const dataPath = path.resolve(__dirname, "./data");
@@ -96,7 +115,7 @@ export const runform = async (query, chatType) => {
     new MessagesPlaceholder("chat_history"),
     ["human", "{query}"],
   ]);
-
+  var context;
   try {
     //const searchResults = await vectorStore.similaritySearch(query, 1);
 
@@ -104,7 +123,7 @@ export const runform = async (query, chatType) => {
       RunnablePassthrough.assign({
         context: async (input) => {
           if ("chat_history" in input && input.chat_history.length > 0) {
-            const context = await vectorStore.similaritySearch(query, 1);
+            context = await vectorStore.similaritySearch(query, 1);
             return formatDocumentsAsString(context);
           }
           return "";
@@ -120,6 +139,7 @@ export const runform = async (query, chatType) => {
     const res = await chain.invoke({
       query: query,
       chat_history,
+      context,
     });
     chat_history.push(new HumanMessage(query));
     chat_history.push(new AIMessage(res));

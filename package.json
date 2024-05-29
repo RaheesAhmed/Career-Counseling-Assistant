@@ -10,7 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@dqbd/tiktoken": "^1.0.13",
     "@langchain/community": "^0.0.41",
     "@langchain/core": "^0.1.52",
     "@langchain/openai": "^0.0.21",

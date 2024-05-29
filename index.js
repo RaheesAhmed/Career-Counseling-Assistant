@@ -1,10 +1,9 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { askQuestion } from "./openai_embedings.js";
-import { runForm } from "./runForm.js";
-import { ask } from "./langchain.js";
-import { runModel } from "./supabase.js";
+
+import { runform } from "./runForm.js";
+import { runModel } from "./langchain.js";
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -39,7 +38,7 @@ app.post("/career-chat", async (req, res) => {
     const formattedUserData = formatUserData(userData);
     const response = await runModel(formattedUserData, chatType);
 
-    res.json({ response: response });
+    res.json({ response: response.text });
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred");
@@ -54,7 +53,7 @@ app.post("/open-chat", async (req, res) => {
     console.log("Open Chat User Input:", userInput);
     const response = await runModel(userInput, chatType);
     console.log("Open Chat Response:", response);
-    res.json({ response: response });
+    res.json({ response: response.text });
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred");
@@ -66,7 +65,7 @@ app.post("/submit-form", async (req, res) => {
     const { userInput } = req.body;
     console.log("Form User Input:", userInput);
     const formattedData = JSON.stringify(userInput);
-    const response = await runForm(formattedData);
+    const response = await runform(formattedData);
 
     console.log("Form Response:", response);
     res.json({ response: response.text });
